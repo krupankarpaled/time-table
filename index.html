@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timetable with Notifications + Task Scheduler</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(120deg, #89f7fe, #66a6ff);
+      color: #222;
+      text-align: center;
+      padding: 20px;
+    }
+    h1, h2 {
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    button, input, select {
+      margin: 8px;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    button {
+      background: #fff;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    }
+    button:hover {
+      background: #333;
+      color: #fff;
+    }
+    #output, #tasks {
+      background: rgba(255,255,255,0.9);
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: #f1f1f1;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    .task {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .task button {
+      font-size: 12px;
+      padding: 5px 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📅 College Timetable</h1>
+  <button onclick="showToday()">Show Today’s Timetable</button>
+  <button onclick="showFull()">Show Full Timetable</button>
+  <button onclick="enableNotifications()">🔔 Get Notifications</button>
+
+  <div id="output"></div>
+
+  <h2>✅ Task Scheduler</h2>
+  <input type="text" id="taskName" placeholder="Enter task name">
+  <select id="taskDay">
+    <option>Sunday</option>
+    <option>Monday</option>
+    <option>Tuesday</option>
+    <option>Wednesday</option>
+    <option>Thursday</option>
+    <option>Friday</option>
+    <option>Saturday</option>
+  </select>
+  <input type="time" id="taskTime">
+  <button onclick="addTask()">Add Task</button>
+
+  <div id="tasks"></div>
+
+  <script>
+    const timetable = {
+      "Monday": [["08:00", "09:00", "SE&PM"],["09:00", "10:00", "Library"],["10:00", "10:30", "Break"],["10:30", "11:30", "RM&IPR"],["11:30", "12:30", "CV"],["12:30", "13:30", "Lunch"],["13:30", "14:30", "Placement"],["14:30", "15:30", "NSS"]],
+      "Tuesday": [["08:00", "09:00", "RM&IPR"],["09:00", "10:00", "TC"],["10:00", "10:30", "Break"],["10:30", "12:30", "CN Lab"],["12:30", "13:30", "Lunch"],["13:30", "14:30", "Placement"],["14:30", "16:30", "Mini Project"]],
+      "Wednesday": [["08:00", "09:00", "CN"],["09:00", "10:00", "EVS"],["10:00", "10:30", "Break"],["10:30", "11:30", "SE&PM"],["11:30", "12:30", "TC"],["12:30", "13:30", "Lunch"],["13:30", "14:30", "Placement"],["14:30", "16:30", "Mini Project"]],
+      "Thursday": [["08:00", "09:00", "RM&IPR"],["09:00", "10:00", "CV"],["10:00", "10:30", "Break"],["10:30", "11:30", "CN"],["11:30", "12:30", "SE&PM"],["12:30", "13:30", "Lunch"],["13:30", "14:30", "TC"]],
+      "Friday": [["08:00", "09:00", "TC"],["09:00", "10:00", "CN"],["10:00", "10:30", "Break"],["10:30", "11:30", "SE&PM"],["11:30", "12:30", "CV"],["12:30", "13:30", "Lunch"],["13:30", "15:30", "Forum Activity"]],
+      "Saturday": [["08:00", "10:00", "DV Lab"],["10:00", "10:30", "Break"],["10:30", "11:30", "RM&IPR"],["11:30", "12:30", "TC"]],
+      "Sunday": []
+    };
+
+    function showToday() {
+      const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+      let today = days[new Date().getDay()];
+      let todaySchedule = timetable[today];
+      let out = `<h2>Today is ${today}</h2>`;
+      if (!todaySchedule || todaySchedule.length === 0) {
+        out += "<p>No classes today 🎉</p>";
+      } else {
+        out += "<ul>" + todaySchedule.map(c => `<li>${c[0]} - ${c[1]} : ${c[2]}</li>`).join("") + "</ul>";
+      }
+      document.getElementById("output").innerHTML = out;
+    }
+
+    function showFull() {
+      let out = "<h2>Full Timetable</h2>";
+      for (let day in timetable) {
+        out += `<h3>${day}</h3>`;
+        if (timetable[day].length === 0) {
+          out += "<p>No classes</p>";
+        } else {
+          out += "<ul>" + timetable[day].map(c => `<li>${c[0]} - ${c[1]} : ${c[2]}</li>`).join("") + "</ul>";
+        }
+      }
+      document.getElementById("output").innerHTML = out;
+    }
+
+    function enableNotifications() {
+      if (!("Notification" in window)) {
+        alert("This browser does not support notifications");
+        return;
+      }
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          alert("Notifications enabled! You’ll get reminders for tasks and classes.");
+          scheduleNotifications();
+        }
+      });
+    }
+
+    function scheduleNotifications() {
+      const now = new Date();
+      const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+      let today = days[now.getDay()];
+      let todaySchedule = timetable[today];
+      if (!todaySchedule) return;
+
+      todaySchedule.forEach(c => {
+        let [h, m] = c[0].split(":").map(Number);
+        let classTime = new Date();
+        classTime.setHours(h, m - 5, 0, 0);
+        let diff = classTime - now;
+        if (diff > 0) {
+          setTimeout(() => {
+            new Notification(`Upcoming Class: ${c[2]}`, {
+              body: `${c[0]} - ${c[1]}`,
+              icon: "https://img.icons8.com/color/48/000000/schedule.png"
+            });
+          }, diff);
+        }
+      });
+    }
+
+    // ---------------- TASK MANAGER WITH DATE+TIME ----------------
+    let tasks = [];
+
+    function renderTasks() {
+      let out = "<h3>Your Tasks</h3>";
+      if (tasks.length === 0) {
+        out += "<p>No tasks added yet</p>";
+      } else {
+        out += "<ul>" + tasks.map((t, i) => `<li class='task'>${t.day} ${t.time} - ${t.name} <button onclick=\"deleteTask(${i})\">❌</button></li>`).join("") + "</ul>";
+      }
+      document.getElementById("tasks").innerHTML = out;
+    }
+
+    function addTask() {
+      let name = document.getElementById("taskName").value.trim();
+      let day = document.getElementById("taskDay").value;
+      let time = document.getElementById("taskTime").value;
+      if (name && time) {
+        let task = {name, day, time};
+        tasks.push(task);
+        renderTasks();
+        scheduleTaskNotification(task);
+        document.getElementById("taskName").value = "";
+        document.getElementById("taskTime").value = "";
+      }
+    }
+
+    function deleteTask(i) {
+      tasks.splice(i, 1);
+      renderTasks();
+    }
+
+    function scheduleTaskNotification(task) {
+      const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+      const now = new Date();
+      let taskDayIndex = days.indexOf(task.day);
+      let [h, m] = task.time.split(":").map(Number);
+      let taskDate = new Date();
+      taskDate.setDate(now.getDate() + ((taskDayIndex + 7 - now.getDay()) % 7));
+      taskDate.setHours(h, m, 0, 0);
+      let diff = taskDate - now;
+      if (diff > 0) {
+        setTimeout(() => {
+          new Notification(`Task Reminder: ${task.name}`, {
+            body: `${task.day} at ${task.time}`,
+            icon: "https://img.icons8.com/color/48/000000/task.png"
+          });
+        }, diff);
+      }
+    }
+
+    renderTasks();
+  </script>
+</body>
+</html>
